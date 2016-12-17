@@ -1,21 +1,27 @@
 package org.aksw.limes.flink;
 
+import org.aksw.limes.flink.DataTypes.BlockIndex;
+import org.aksw.limes.flink.DataTypes.BlockIndexedGeoEntity;
 import org.aksw.limes.flink.DataTypes.GeoEntity;
 import org.aksw.limes.flink.Exception.InvalidArgumentException;
+import org.aksw.limes.flink.Transformation.BlockIndexMap;
+import org.aksw.limes.flink.Transformation.CountCompareBlocksGroupReduce;
+import org.aksw.limes.flink.Transformation.GetBlocksToCompareFlatMap;
 import org.aksw.limes.flink.Transformation.UriLatLongGroupReduce;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
-import org.apache.flink.api.common.io.SerializedOutputFormat;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.operators.UnsortedGrouping;
+import org.apache.flink.api.java.aggregation.Aggregations;
+import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.utils.DataSetUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.util.Collector;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 
 /**
  * Main Job class with main method
@@ -28,6 +34,8 @@ public class MainJob {
     private static final String sourceCsvArg = "sourceCsv";
     private static final String targetCsvArg = "targetCsv";
     private static final String resultCsvArg = "resultCsv";
+
+    public static final int granularity = 4;
 
     /**
      * Main method will be executed at program start
@@ -71,8 +79,17 @@ public class MainJob {
                 .groupBy(0)
                 .reduceGroup(new UriLatLongGroupReduce());
 
-        groupedRdfSourceDs.print();
-        groupedRdfTargetDs.print();
+        DataSet<BlockIndexedGeoEntity> sourceBlockIndex = groupedRdfSourceDs.map(new BlockIndexMap(granularity));
+        DataSet<BlockIndexedGeoEntity> targetBlockIndex = groupedRdfTargetDs.map(new BlockIndexMap(granularity));
+
+        DataSet<Tuple2<BlockIndexedGeoEntity,BlockIndex>> blocksToCompareDs;
+
+        blocksToCompareDs = sourceBlockIndex
+                .flatMap(new GetBlocksToCompareFlatMap(granularity));
+
+        blocksToCompareDs.print();
+
+        blocksToCompareDs.groupBy(0).reduceGroup(new CountCompareBlocksGroupReduce()).print();
 
         System.out.println("done");
     }
