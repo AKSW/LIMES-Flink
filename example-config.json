@@ -1,0 +1,14 @@
+{
+  "comment" : "This is a example config file for LIMES-Flink application",
+
+
+  "sourceFile" : "/home/debian/projects/LIMES-dev/limes-core/cache/1751658391.csv",
+  "sourceType" : "csv",
+  "sourceIsOneEntityPerLine" : false,
+
+  "targetFile" : "/home/debian/projects/LIMES-dev/limes-core/cache/-554868170.csv",
+  "targetType" : "csv",
+  "targetIsOneEntityPerLine" : false,
+
+  "outputFile" : "/home/debian/output/amenity-test-out.csv"
+}
