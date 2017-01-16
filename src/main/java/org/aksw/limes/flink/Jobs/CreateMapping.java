@@ -23,8 +23,6 @@ public class CreateMapping
 {
     private static final Logger logger = LoggerFactory.getLogger(CreateMapping.class.getName());
 
-    public static final int granularity = 4;
-
     private Configuration _config;
     private ExecutionEnvironment _executionEnv;
 
@@ -46,11 +44,14 @@ public class CreateMapping
         DataSet<GeoEntity> sourceGeoEntityDs = _getFromCache(this._config.getSourceFile());
         DataSet<GeoEntity> targetGeoEntityDs = _getFromCache(this._config.getTargetFile());
 
-        DataSet<BlockIndexedGeoEntity> sourceBlockIndex = sourceGeoEntityDs.map(new BlockIndexMap(granularity));
-        DataSet<BlockIndexedGeoEntity> targetBlockIndex = targetGeoEntityDs.map(new BlockIndexMap(granularity));
+        logger.info("Without HR3 there are " + Long.toString(sourceGeoEntityDs.count() * targetGeoEntityDs.count()) +
+                " pairs to compare.");
+
+        DataSet<BlockIndexedGeoEntity> sourceBlockIndex = sourceGeoEntityDs.map(new BlockIndexMap(_config.getGranularity()));
+        DataSet<BlockIndexedGeoEntity> targetBlockIndex = targetGeoEntityDs.map(new BlockIndexMap(_config.getGranularity()));
 
         DataSet<Tuple2<BlockIndexedGeoEntity,BlockIndex>> blocksToCompareDs = sourceBlockIndex
-                .flatMap(new GetBlocksToCompareFlatMap(granularity));
+                .flatMap(new GetBlocksToCompareFlatMap(_config.getGranularity()));
 
         JoinOperator.DefaultJoin<Tuple2<BlockIndexedGeoEntity, BlockIndex>, BlockIndexedGeoEntity> joined = blocksToCompareDs
                 .join(targetBlockIndex)
@@ -59,14 +60,14 @@ public class CreateMapping
 
         DataSet<GeoEntityPair> geoEntityPair = joined.map(new CreateGeoEntityPairsMap());
 
-        DataSet<UriPair> uriPairs = geoEntityPair.map(new CreateUriPairsMap());
+        DataSet<EntitySimilarity> uriPairsWithSimilarity = geoEntityPair.flatMap(new MeasureFlatMap(_config.getSimThreshold()));
 
-        uriPairs.writeAsCsv("file:///" + Helper.getUniqueFilename(this._config.getOutputFile(), ".csv"),"\n",";");
+        uriPairsWithSimilarity.writeAsCsv("file:///" + Helper.getUniqueFilename(this._config.getOutputFile(), ".csv"),"\n",";");
 
         //blocksToCompareDs.groupBy(0).reduceGroup(new CountCompareBlocksGroupReduce()).print();
 
         this._executionEnv.execute("CreateComparePairs");
-        logger.info("Finished mapping task. [" + uriPairs.count() + "] pairs to compare were detected.");
+        logger.info("Finished mapping task. [" + uriPairsWithSimilarity.count() + "] pairs to compare were detected.");
     }
 
     /**

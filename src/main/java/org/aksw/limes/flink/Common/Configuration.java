@@ -22,8 +22,12 @@ public class Configuration
     private static final String TARGET_TYPE = "targetType";
     private static final String TARGET_IS_ONE_ENTITY_PER_LINE = "targetIsOneEntityPerLine";
     private static final String OUTPUT_FILE = "outputFile";
+    private static final String GRANULARITY = "granularity";
+    private static final String SIM_THRESHOLD = "simThreshold";
 
     private String sourceFile, sourceType, targetFile, targetType, outputFile;
+    private int granularity = 4;
+    private double simThreshold = 0.d;
     private boolean sourceIsOneEntityPerLine, targetIsOneEntityPerLine;
 
     /**
@@ -84,6 +88,8 @@ public class Configuration
             boolean targetIsOneEntityPerLine = configFileObject.getBoolean(TARGET_IS_ONE_ENTITY_PER_LINE);
             String targetType = configFileObject.getString(TARGET_TYPE);
             String outputFile = configFileObject.getString(OUTPUT_FILE);
+            String granularity = configFileObject.getString(GRANULARITY);
+            String simThreshold = configFileObject.getString(SIM_THRESHOLD);
 
             Configuration config = new Configuration(
                     sourceFile,
@@ -105,6 +111,16 @@ public class Configuration
             if (outputFile != null)
             {
                 config.setOutputFile(outputFile);
+            }
+
+            if (granularity != null)
+            {
+                config.setGranularity(Integer.parseInt(granularity));
+            }
+
+            if (simThreshold != null)
+            {
+                config.setSimThreshold(Double.parseDouble(simThreshold));
             }
 
             return config;
@@ -175,6 +191,24 @@ public class Configuration
 
     public Configuration setTargetType(String targetType) {
         this.targetType = targetType;
+        return this;
+    }
+
+    public int getGranularity() {
+        return granularity;
+    }
+
+    public Configuration setGranularity(int granularity) {
+        this.granularity = granularity;
+        return this;
+    }
+
+    public double getSimThreshold() {
+        return simThreshold;
+    }
+
+    public Configuration setSimThreshold(double simThreshold) {
+        this.simThreshold = simThreshold;
         return this;
     }
 }

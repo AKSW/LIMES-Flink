@@ -10,5 +10,7 @@
   "targetType" : "csv",
   "targetIsOneEntityPerLine" : false,
 
+  "granularity" : "4",
+  "simThreshold" : "0.5",
   "outputFile" : "/home/debian/output/amenity-test-out.csv"
 }
